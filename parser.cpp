@@ -26,22 +26,22 @@ void Parser::setPackage(QByteArray &serialBuffer){
         inc += bufferToParse.at(4);
 
         payload_length = bufferToParse.at(5);
-        for (int i = 6; i < 78; i++) {
+        for (int i = 6; i < 84; i++) {
             bufferToPacket.append(bufferToParse.at(i));
         }
         sendPacketToAPI(bufferToPacket);
 
-        crc = bufferToParse.at(263);
+        crc = bufferToParse.at(84);
         crc = crc << 24;
-        temp_crc = bufferToParse.at(264);
+        temp_crc = bufferToParse.at(85);
         temp_crc = temp_crc << 16;
         crc += temp_crc;
         temp_crc = 0;
-        temp_crc = bufferToParse.at(265);
+        temp_crc = bufferToParse.at(86);
         temp_crc = temp_crc << 8;
         crc += temp_crc;
         temp_crc = 0;
-        crc += bufferToParse.at(266);
+        crc += bufferToParse.at(87);
 
         //C_CRC = generete_crc32(bufferToPacket, payload_length+1);
         /*if (C_CRC == crc)
@@ -188,7 +188,7 @@ void Parser::sendPacketToAPI(QByteArray &bufferToPacket){
     m_aux_data32 = bufferToPacket.at(77);
 
     QNetworkRequest request;
-    request.setUrl(QUrl ("http://192.168.247.139:8000/data/"));      //https://cryptic-reaches-94837.herokuapp.com/data/
+    request.setUrl(QUrl ("http://trip:lukino93@https://cryptic-reaches-94837.herokuapp.com/data/"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     QString json = QString("{"
                            "\"rpm\":\"%1\",\"inj1\":\"%2\","
