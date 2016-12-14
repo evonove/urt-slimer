@@ -3,6 +3,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QAuthenticator>
 #include <QByteArray>
 #include <QQueue>
 #include <QEventLoop>
@@ -21,39 +22,12 @@ void Parser::setPackage(QByteArray &serialBuffer){
         bufferToParse = queue.dequeue();
 
         cmdTel = bufferToParse.at(2);
-        inc = bufferToParse.at(3);
-        inc = inc << 8;
-        inc += bufferToParse.at(4);
 
         payload_length = bufferToParse.at(5);
         for (int i = 6; i < 84; i++) {
             bufferToPacket.append(bufferToParse.at(i));
         }
         sendPacketToAPI(bufferToPacket);
-
-        crc = bufferToParse.at(84);
-        crc = crc << 24;
-        temp_crc = bufferToParse.at(85);
-        temp_crc = temp_crc << 16;
-        crc += temp_crc;
-        temp_crc = 0;
-        temp_crc = bufferToParse.at(86);
-        temp_crc = temp_crc << 8;
-        crc += temp_crc;
-        temp_crc = 0;
-        crc += bufferToParse.at(87);
-
-        //C_CRC = generete_crc32(bufferToPacket, payload_length+1);
-        /*if (C_CRC == crc)
-            //status = 0x01; //crc corretto ~ pacchetto ok
-            qDebug() << "CRC CORRETTO";
-        else
-            qDebug() << "CRC NON CORRISPONDE";
-            //status = 0x02; //crc non corrisponde ~ pacchetto ricevuto con successo ~ payload corrotto
-        */
-        bufferToPacket.clear();
-        inc = 0;
-        crc = 0;
     }
 }
 
@@ -188,7 +162,9 @@ void Parser::sendPacketToAPI(QByteArray &bufferToPacket){
     m_aux_data32 = bufferToPacket.at(77);
 
     QNetworkRequest request;
-    request.setUrl(QUrl ("http://trip:lukino93@https://cryptic-reaches-94837.herokuapp.com/data/"));
+    QUrl url("https://tech-team-unipgracingteam.herokuapp.com/data/");
+    url.setUserInfo("");
+    request.setUrl(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     QString json = QString("{"
                            "\"rpm\":\"%1\",\"inj1\":\"%2\","
@@ -266,4 +242,3 @@ void Parser::sendPacketToAPI(QByteArray &bufferToPacket){
         delete reply;
     }
 }
-

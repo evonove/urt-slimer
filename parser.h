@@ -4,6 +4,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
+#include <QAuthenticator>
 #include <QCoreApplication>
 #include <QByteArray>
 #include <QQueue>
@@ -15,16 +16,11 @@ class Parser : public QObject
 
 public:
     Parser();
-    quint16 inc; //valore incrementale del pacchetto
     quint8 cmdTel;
-    quint32 temp_crc;
-    quint32 crc; //codice controllo erore
-    quint32 C_CRC;
     QByteArray sendBuffer;
     QByteArray bufferToParse;
     QByteArray bufferToPacket;
     quint16 payload_length = 0x00;
-    quint8 status; // Stato della decodifica 0x00(in corso) 0x01(Pacchetto ok) 0x02(CRC errato) 0x03(Errore di decodifica)
     QQueue<QByteArray> queue;
     void setPackage(QByteArray &serialBuffer);
     void sendPacketToAPI(QByteArray &bufferToPacket);

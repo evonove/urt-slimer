@@ -19,14 +19,13 @@ public:
     QByteArray sendBuffer;
     quint8 payload_index = 0x00;
     quint8 payload_length = 0x00;
-    QString status;
     void processData(QByteArray datas, PackageState &state);
 
 public slots:
     void runSerialReader();
 
-/*signals:
-    void finished();*/
+signals:
+    void finished();
 
 private:
     Parser parser;

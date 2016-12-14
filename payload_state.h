@@ -8,7 +8,7 @@ enum PackageState
     DEST_ID,
     INC_MSB,
     INC_LSB,
-    PACK_LENGHT,
+    PACK_LENGTH,
     PAYLOAD,
     CRC_MSB,
     CRC_B3,

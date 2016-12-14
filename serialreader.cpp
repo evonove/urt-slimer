@@ -37,7 +37,7 @@ void SerialReader::runSerialReader(){
 
     serialPort->close();
     qDebug() << "...serial port is closed!";
-    //emit finished();
+    emit finished();
 
 }
 
@@ -91,9 +91,9 @@ void SerialReader::processData(QByteArray datas, PackageState &state)
         case INC_LSB:
             qDebug() << "entrato inc lsb";
             serialBuffer.append(datas.at(i));
-            state = PACK_LENGHT;
+            state = PACK_LENGTH;
             break;
-        case PACK_LENGHT:
+        case PACK_LENGTH:
             qDebug() << "entrato pack length";
             serialBuffer.append(datas.at(i));
             payload_length = datas.at(i);
@@ -142,28 +142,16 @@ void SerialReader::processData(QByteArray datas, PackageState &state)
             if (datas.at(i) == 0x0F) { //0x0F fine del pacchetto
                 qDebug() << "payload corretto";
                 serialBuffer.append(datas.at(i));
-                //status = "CORRECT_PAYLOAD";
                 qDebug() << serialBuffer.toHex();
                 qDebug() << serialBuffer.size();
                 parser.setPackage(serialBuffer);
-                state = START_BYTE_1;
-                serialBuffer.clear();
-                payload_index = 0x00;
-                payload_length = 0x00;
-                status = "";
             } else{
                 qDebug() << "errore ultimo byte";
-                serialBuffer.append(datas.at(i));
-                //status = "ERROR_PAYLOAD";
-                qDebug() << serialBuffer.toHex();
-                qDebug() << serialBuffer.size();
-                //setPackage(serialBuffer, sendBuffer, status);
-                state = START_BYTE_1;
-                serialBuffer.clear();
-                payload_index = 0x00;
-                payload_length = 0x00;
-                //status = null;
             }
+            state = START_BYTE_1;
+            serialBuffer.clear();
+            payload_index = 0x00;
+            payload_length = 0x00;
             break;
         default:
             break;

@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 
     QTimer::singleShot(0, &serialReader, SLOT(runSerialReader()));
 
-    //QObject::connect(serialReader, SIGNAL(finished()), &a, SLOT(quit()));
+    QObject::connect(&serialReader, SIGNAL(finished()), &a, SLOT(quit()));
 
     return a.exec();
 }
