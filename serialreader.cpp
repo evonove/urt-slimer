@@ -5,7 +5,10 @@
 #include <QByteArray>
 #include <QSerialPort>
 
-SerialReader::SerialReader() {}
+SerialReader::SerialReader()
+    : m_payloadIndex{0x00}
+    , m_payloadLength{0x00}
+{ }
 
 void SerialReader::runSerialReader(){
     PackageState state = START_BYTE_1;
@@ -18,17 +21,15 @@ void SerialReader::runSerialReader(){
     serialPort->setFlowControl(QSerialPort::NoFlowControl);
     serialPort->open(QIODevice::ReadOnly);
 
-    if (serialPort->isOpen())
-    {
+    if (serialPort->isOpen()) {
         qDebug() << "Serial port is open...";
-        while (serialPort->waitForReadyRead(50))
-        {
+        while (serialPort->waitForReadyRead(50)) {
             QByteArray datas = serialPort->readAll();
-            if (datas.size() == 0){
+            if (datas.size() == 0) {
                 qDebug() << "ERROR data not read";
-            } else {
-                processData(datas, state);
+                break;
             }
+            processData(datas, state);
             QCoreApplication::processEvents();
         }
     } else {
@@ -38,123 +39,112 @@ void SerialReader::runSerialReader(){
     serialPort->close();
     qDebug() << "...serial port is closed!";
     emit finished();
-
 }
 
 void SerialReader::processData(QByteArray datas, PackageState &state)
 {
-    for (int i = 0; i < datas.size(); i++)
-    {
-        switch (state)
-        {
-        case START_BYTE_1:
-            if (datas.at(i) == 0xAA)
-            {
-                qDebug() << "entrato nello start byte 1";
-                state = START_BYTE_2;
-                serialBuffer.append(datas.at(i));
-            }
-            break;
-        case START_BYTE_2:
-            if (datas.at(i) == 0x55)
-            {
-                qDebug() << "entrato nello start byte 2";
-                state = DEST_ID;
-                serialBuffer.append(datas.at(i));
-            }
-            else
-            {
-                qDebug() << "errore --> start byte 1";
-                state = START_BYTE_1;
-                serialBuffer.clear();
-            }
-            break;
-        case DEST_ID:
-            if (datas.at(i) == 0x01)
-            {
-                qDebug() << "entrato nel dest id";
-                state = INC_MSB;
-                serialBuffer.append(datas.at(i));
-            }
-            else
-            {
-                qDebug() << "error --> start byte 1";
-                state = START_BYTE_1;
-                serialBuffer.clear();
-            }
-            break;
-        case INC_MSB:
-            qDebug() << "entrato inc msb";
-            serialBuffer.append(datas.at(i));
-            state = INC_LSB;
-            break;
-        case INC_LSB:
-            qDebug() << "entrato inc lsb";
-            serialBuffer.append(datas.at(i));
-            state = PACK_LENGTH;
-            break;
-        case PACK_LENGTH:
-            qDebug() << "entrato pack length";
-            serialBuffer.append(datas.at(i));
-            payload_length = datas.at(i);
-            if (payload_length == 0x00){
+    for (int i = 0; i < datas.size(); i++) {
+        switch (state) {
+            case START_BYTE_1:
+                if (datas.at(i) == 0xAA) {
+                    qDebug() << "START_BYTE_1";
+                    m_serialBuffer.append(datas.at(i));
+                    state = START_BYTE_2;
+                }
+                break;
+            case START_BYTE_2:
+                if (datas.at(i) == 0x55) {
+                    qDebug() << "START_BYTE_2";
+                    m_serialBuffer.append(datas.at(i));
+                    state = DEST_ID;
+                } else {
+                    qDebug() << "Error, resetting state to START_BYTE_1";
+                    m_serialBuffer.clear();
+                    state = START_BYTE_1;
+                }
+                break;
+            case DEST_ID:
+                if (datas.at(i) == 0x01) {
+                    qDebug() << "DEST_ID";
+                    m_serialBuffer.append(datas.at(i));
+                    state = INC_MSB;
+                } else {
+                    qDebug() << "Error, resetting state to START_BYTE_1";
+                    m_serialBuffer.clear();
+                    state = START_BYTE_1;
+                }
+                break;
+            case INC_MSB:
+                qDebug() << "INC_MSB";
+                m_serialBuffer.append(datas.at(i));
+                state = INC_LSB;
+                break;
+            case INC_LSB:
+                qDebug() << "INC_LSB";
+                m_serialBuffer.append(datas.at(i));
+                state = PACK_LENGTH;
+                break;
+            case PACK_LENGTH:
+                qDebug() << "PACK_LENGTH";
+                m_serialBuffer.append(datas.at(i));
+                m_payloadLength = datas.at(i);
+                if (m_payloadLength == 0x00) {
+                    state = EXIT;
+                    qDebug() << "Payload length is 0";
+                } else {
+                    state = PAYLOAD;
+                    qDebug() << "Payload length is not 0";
+                }
+                break;
+            case PAYLOAD:
+                qDebug() << "PAYLOAD";
+                m_serialBuffer.append(datas.at(i));
+                if (m_payloadIndex == m_payloadLength){
+                    state = CRC_MSB;
+                    qDebug() << "Payload index" << m_payloadIndex;
+                    qDebug() << "Payload length" << m_payloadLength;
+                    qDebug() << "Buffer size " << m_serialBuffer.size();
+                }
+                m_payloadIndex++;
+                break;
+            case CRC_MSB:
+                qDebug() << "CRC_MSB";
+                m_serialBuffer.append(datas.at(i));
+                state = CRC_B3;
+                break;
+            case CRC_B3:
+                qDebug() << "CRC_B3";
+                m_serialBuffer.append(datas.at(i));
+                state = CRC_B2;
+                break;
+            case CRC_B2:
+                qDebug() << "CRC_B2";
+                m_serialBuffer.append(datas.at(i));
+                state = CRC_LSB;
+                break;
+            case CRC_LSB:
+                qDebug() << "CRC_LSB";
+                m_serialBuffer.append(datas.at(i));
                 state = EXIT;
-                qDebug() << "payload length 0";
-            }
-            else
-            {
-                qDebug() << "payload length != 0";
-                state = PAYLOAD;
-            }
-            break;
-        case PAYLOAD:
-            serialBuffer.append(datas.at(i));
-            if (payload_index == payload_length){
-                state = CRC_MSB;
-                qDebug() << "~payload_index " << payload_index;
-                qDebug() << "~payload_length" << payload_length;
-                qDebug() << "~buffer " << serialBuffer.size();
-            }
-            payload_index++;
-            break;
-        case CRC_MSB:
-            qDebug() << "entrato nel crc msb";
-            serialBuffer.append(datas.at(i));
-            state = CRC_B3;
-            break;
-        case CRC_B3:
-            qDebug() << "entrato nel crc b3";
-            serialBuffer.append(datas.at(i));
-            state = CRC_B2;
-            break;
-        case CRC_B2:
-            qDebug() << "entrato nel crc b2";
-            serialBuffer.append(datas.at(i));
-            state = CRC_LSB;
-            break;
-        case CRC_LSB:
-            qDebug() << "entrato nel crc lsb";
-            serialBuffer.append(datas.at(i));
-            state = EXIT;
-            break;
-        case EXIT:
-            qDebug() << "entrato exit";
-            if (datas.at(i) == 0x0F) { //0x0F fine del pacchetto
-                qDebug() << "payload corretto";
-                serialBuffer.append(datas.at(i));
-                qDebug() << serialBuffer.toHex();
-                qDebug() << serialBuffer.size();
-                parser.setPackage(serialBuffer);
-            } else{
-                qDebug() << "errore ultimo byte";
-            }
-            state = START_BYTE_1;
-            serialBuffer.clear();
-            payload_index = 0x00;
-            payload_length = 0x00;
-            break;
-        default:
-            break;
+                break;
+            case EXIT:
+                qDebug() << "EXIT";
+                if (datas.at(i) == 0x0F) { // Packet end
+                    qDebug() << "Correct payload";
+                    m_serialBuffer.append(datas.at(i));
+                    qDebug() << m_serialBuffer.toHex();
+                    qDebug() << m_serialBuffer.size();
+                    m_parser.setPackage(m_serialBuffer);
+                } else{
+                    qDebug() << "Error in last byte";
+                }
+                m_serialBuffer.clear();
+                m_payloadIndex = 0x00;
+                m_payloadLength = 0x00;
+                state = START_BYTE_1;
+                break;
+            default:
+                break;
         }
     }
 }
