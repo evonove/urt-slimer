@@ -165,47 +165,47 @@ void Parser::sendPacketToAPI(QByteArray &bufferToPacket){
 
     auto env = QProcessEnvironment::systemEnvironment();
     QUrl url(env.value("SLIMER_BACKEND_URL"));
-    auto userInfo = QString("%s:%s")
+    auto userInfo = QString("%1:%2")
             .arg(env.value("SLIMER_BACKEND_USERNAME"))
-            .arg(env.value("SLIMER_BACKEND_USERNAME"));
+            .arg(env.value("SLIMER_BACKEND_PASSWORD"));
     url.setUserInfo(userInfo);
 
     QNetworkRequest request;
     request.setUrl(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     QString json = QString("{"
-                           "\"rpm\":\"%1\",\"inj1\":\"%2\","
-                           "\"inj2\":\"%3\",\"ign1\":\"%4\","
-                           "\"ign2\":\"%5\",\"wtemp\":\"%6\","
-                           "\"airtemp\":\"%7\",\"airp\":\"%8\","
-                           "\"oilt\":\"%9\",\"tps\":\"%10\","
-                           "\"lambda_1\":\"%11\",\"lambda_trg\":\"%12\","
-                           "\"speed_fl\":\"%13\",\"speed_fr\":\"%14\","
-                           "\"speed_rl\":\"%15\",\"speed_rr\":\"%16\","
-                           "\"vbatt\":\"%17\",\"aux\":\"%18\","
-                           "\"det\":\"%19\",\"fcmp\":\"%20\","
-                           "\"ecu_error\":\"%21\",\"fpga_error\":\"%22\","
-                           "\"status\":\"%23\",\"delta\":\"%24\","
-                           "\"dwell\":\"%25\",\"map_tc_sel\":\"%26\","
-                           "\"slpf_fl\":\"%27\",\"slpf_fr\":\"%28\","
-                           "\"slpf_rl\":\"%29\",\"slpf_rr\":\"%30\","
-                           "\"cutoff\":\"%31\",\"time\":\"%32\","
-                           "\"aux_data1\":\"%33\",\"aux_data2\":\"%34\","
-                           "\"aux_data3\":\"%35\",\"aux_data4\":\"%36\","
-                           "\"aux_data5\":\"%37\",\"aux_data6\":\"%38\","
-                           "\"aux_data7\":\"%39\",\"aux_data8\":\"%40\","
-                           "\"aux_data9\":\"%41\",\"aux_data10\":\"%42\","
-                           "\"aux_data11\":\"%43\",\"aux_data12\":\"%44\","
-                           "\"aux_data13\":\"%45\",\"aux_data14\":\"%46\","
-                           "\"aux_data15\":\"%47\",\"aux_data16\":\"%48\","
-                           "\"aux_data17\":\"%49\",\"aux_data18\":\"%50\","
-                           "\"aux_data19\":\"%51\",\"aux_data20\":\"%52\","
-                           "\"aux_data21\":\"%53\",\"aux_data22\":\"%54\","
-                           "\"aux_data23\":\"%55\",\"aux_data24\":\"%56\","
-                           "\"aux_data25\":\"%57\",\"aux_data26\":\"%58\","
-                           "\"aux_data27\":\"%59\",\"aux_data28\":\"%60\","
-                           "\"aux_data29\":\"%61\",\"aux_data30\":\"%62\","
-                           "\"aux_data31\":\"%63\",\"aux_data32\":\"%64\"}")
+                           "'rpm':'%1','inj1':'%2',"
+                           "'inj2':'%3','ign1':'%4',"
+                           "'ign2':'%5','wtemp':'%6',"
+                           "'airtemp':'%7','airp':'%8',"
+                           "'oilt':'%9','tps':'%10',"
+                           "'lambda_1':'%11','lambda_trg':'%12',"
+                           "'speed_fl':'%13','speed_fr':'%14',"
+                           "'speed_rl':'%15','speed_rr':'%16',"
+                           "'vbatt':'%17','aux':'%18',"
+                           "'det':'%19','fcmp':'%20',"
+                           "'ecu_error':'%21','fpga_error':'%22',"
+                           "'status':'%23','delta':'%24',"
+                           "'dwell':'%25','map_tc_sel':'%26',"
+                           "'slpf_fl':'%27','slpf_fr':'%28',"
+                           "'slpf_rl':'%29','slpf_rr':'%30',"
+                           "'cutoff':'%31','time':'%32',"
+                           "'aux_data1':'%33','aux_data2':'%34',"
+                           "'aux_data3':'%35','aux_data4':'%36',"
+                           "'aux_data5':'%37','aux_data6':'%38',"
+                           "'aux_data7':'%39','aux_data8':'%40',"
+                           "'aux_data9':'%41','aux_data10':'%42',"
+                           "'aux_data11':'%43','aux_data12':'%44',"
+                           "'aux_data13':'%45','aux_data14':'%46',"
+                           "'aux_data15':'%47','aux_data16':'%48',"
+                           "'aux_data17':'%49','aux_data18':'%50',"
+                           "'aux_data19':'%51','aux_data20':'%52',"
+                           "'aux_data21':'%53','aux_data22':'%54',"
+                           "'aux_data23':'%55','aux_data24':'%56',"
+                           "'aux_data25':'%57','aux_data26':'%58',"
+                           "'aux_data27':'%59','aux_data28':'%60',"
+                           "'aux_data29':'%61','aux_data30':'%62',"
+                           "'aux_data31':'%63','aux_data32':'%64'}")
             .arg(m_rpm).arg(m_inj1)
             .arg(m_inj2).arg(m_ign1)
             .arg(m_ign2).arg(m_wtemp)
