@@ -1,5 +1,3 @@
-#include "parser.h"
-
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -7,27 +5,31 @@
 #include <QByteArray>
 #include <QQueue>
 #include <QEventLoop>
+#include <QProcessEnvironment>
 
+#include "parser.h"
 
 Parser::Parser()
     : m_manager { new QNetworkAccessManager }
+    , m_payloadLength{0x00}
 {
     QObject::connect(m_manager, SIGNAL(finished(QNetworkReply*)), &m_eventLoop, SLOT(quit()));
 }
 
 void Parser::setPackage(QByteArray &serialBuffer){
-    sendBuffer = serialBuffer;
-    queue.enqueue(sendBuffer);
-    while (!queue.isEmpty()) {
-        bufferToParse = queue.dequeue();
+    m_sendBuffer = serialBuffer;
+    m_queue.enqueue(m_sendBuffer);
 
-        cmdTel = bufferToParse.at(2);
+    while (!m_queue.isEmpty()) {
+        m_bufferToParse = m_queue.dequeue();
 
-        payload_length = bufferToParse.at(5);
+        m_cmdTel = m_bufferToParse.at(2);
+        m_payloadLength = m_bufferToParse.at(5);
+
         for (int i = 6; i < 84; i++) {
-            bufferToPacket.append(bufferToParse.at(i));
+            m_bufferToPacket.append(m_bufferToParse.at(i));
         }
-        sendPacketToAPI(bufferToPacket);
+        sendPacketToAPI(m_bufferToPacket);
     }
 }
 
@@ -161,9 +163,14 @@ void Parser::sendPacketToAPI(QByteArray &bufferToPacket){
     m_aux_data31 = bufferToPacket.at(76);
     m_aux_data32 = bufferToPacket.at(77);
 
+    auto env = QProcessEnvironment::systemEnvironment();
+    QUrl url(env.value("SLIMER_BACKEND_URL"));
+    auto userInfo = QString("%s:%s")
+            .arg(env.value("SLIMER_BACKEND_USERNAME"))
+            .arg(env.value("SLIMER_BACKEND_USERNAME"));
+    url.setUserInfo(userInfo);
+
     QNetworkRequest request;
-    QUrl url("https://tech-team-unipgracingteam.herokuapp.com/data/");
-    url.setUserInfo("");
     request.setUrl(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     QString json = QString("{"
@@ -198,39 +205,40 @@ void Parser::sendPacketToAPI(QByteArray &bufferToPacket){
                            "\"aux_data25\":\"%57\",\"aux_data26\":\"%58\","
                            "\"aux_data27\":\"%59\",\"aux_data28\":\"%60\","
                            "\"aux_data29\":\"%61\",\"aux_data30\":\"%62\","
-                           "\"aux_data31\":\"%63\",\"aux_data32\":\"%64\"}").arg(m_rpm).arg(m_inj1)
-                                                                             .arg(m_inj2).arg(m_ign1)
-                                                                             .arg(m_ign2).arg(m_wtemp)
-                                                                             .arg(m_airtemp).arg(m_airp)
-                                                                             .arg(m_oilt).arg(m_tps)
-                                                                             .arg(m_lambda_1).arg(m_lambda_trg)
-                                                                             .arg(m_speed_fl).arg(m_speed_fr)
-                                                                             .arg(m_speed_rl).arg(m_speed_rr)
-                                                                             .arg(m_vbatt).arg(m_aux)
-                                                                             .arg(m_det).arg(m_fcmp)
-                                                                             .arg(m_ecu_error).arg(m_fpga_error)
-                                                                             .arg(m_status).arg(m_delta)
-                                                                             .arg(m_dwell).arg(m_map_tc_sel)
-                                                                             .arg(m_slpf_fl).arg(m_slpf_fr)
-                                                                             .arg(m_slpf_rl).arg(m_slpf_rr)
-                                                                             .arg(m_cutoff).arg(m_time)
-                                                                             .arg(m_aux_data1).arg(m_aux_data2)
-                                                                             .arg(m_aux_data3).arg(m_aux_data4)
-                                                                             .arg(m_aux_data5).arg(m_aux_data6)
-                                                                             .arg(m_aux_data7).arg(m_aux_data8)
-                                                                             .arg(m_aux_data9).arg(m_aux_data10)
-                                                                             .arg(m_aux_data11).arg(m_aux_data12)
-                                                                             .arg(m_aux_data13).arg(m_aux_data14)
-                                                                             .arg(m_aux_data15).arg(m_aux_data16)
-                                                                             .arg(m_aux_data17).arg(m_aux_data18)
-                                                                             .arg(m_aux_data19).arg(m_aux_data20)
-                                                                             .arg(m_aux_data21).arg(m_aux_data22)
-                                                                             .arg(m_aux_data23).arg(m_aux_data24)
-                                                                             .arg(m_aux_data25).arg(m_aux_data26)
-                                                                             .arg(m_aux_data27).arg(m_aux_data28)
-                                                                             .arg(m_aux_data29).arg(m_aux_data30)
-                                                                             .arg(m_aux_data31).arg(m_aux_data32);
-    qDebug() << "~json " << json;
+                           "\"aux_data31\":\"%63\",\"aux_data32\":\"%64\"}")
+            .arg(m_rpm).arg(m_inj1)
+            .arg(m_inj2).arg(m_ign1)
+            .arg(m_ign2).arg(m_wtemp)
+            .arg(m_airtemp).arg(m_airp)
+            .arg(m_oilt).arg(m_tps)
+            .arg(m_lambda_1).arg(m_lambda_trg)
+            .arg(m_speed_fl).arg(m_speed_fr)
+            .arg(m_speed_rl).arg(m_speed_rr)
+            .arg(m_vbatt).arg(m_aux)
+            .arg(m_det).arg(m_fcmp)
+            .arg(m_ecu_error).arg(m_fpga_error)
+            .arg(m_status).arg(m_delta)
+            .arg(m_dwell).arg(m_map_tc_sel)
+            .arg(m_slpf_fl).arg(m_slpf_fr)
+            .arg(m_slpf_rl).arg(m_slpf_rr)
+            .arg(m_cutoff).arg(m_time)
+            .arg(m_aux_data1).arg(m_aux_data2)
+            .arg(m_aux_data3).arg(m_aux_data4)
+            .arg(m_aux_data5).arg(m_aux_data6)
+            .arg(m_aux_data7).arg(m_aux_data8)
+            .arg(m_aux_data9).arg(m_aux_data10)
+            .arg(m_aux_data11).arg(m_aux_data12)
+            .arg(m_aux_data13).arg(m_aux_data14)
+            .arg(m_aux_data15).arg(m_aux_data16)
+            .arg(m_aux_data17).arg(m_aux_data18)
+            .arg(m_aux_data19).arg(m_aux_data20)
+            .arg(m_aux_data21).arg(m_aux_data22)
+            .arg(m_aux_data23).arg(m_aux_data24)
+            .arg(m_aux_data25).arg(m_aux_data26)
+            .arg(m_aux_data27).arg(m_aux_data28)
+            .arg(m_aux_data29).arg(m_aux_data30)
+            .arg(m_aux_data31).arg(m_aux_data32);
+    qDebug() << "Json " << json;
     QNetworkReply *reply = m_manager->post(request, json.toUtf8());
     m_eventLoop.exec();
 
