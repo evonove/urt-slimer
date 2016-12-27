@@ -1,5 +1,3 @@
-#include "parser.h"
-
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>
@@ -7,27 +5,31 @@
 #include <QByteArray>
 #include <QQueue>
 #include <QEventLoop>
+#include <QProcessEnvironment>
 
+#include "parser.h"
 
 Parser::Parser()
     : m_manager { new QNetworkAccessManager }
+    , m_payloadLength{0x00}
 {
     QObject::connect(m_manager, SIGNAL(finished(QNetworkReply*)), &m_eventLoop, SLOT(quit()));
 }
 
 void Parser::setPackage(QByteArray &serialBuffer){
-    sendBuffer = serialBuffer;
-    queue.enqueue(sendBuffer);
-    while (!queue.isEmpty()) {
-        bufferToParse = queue.dequeue();
+    m_sendBuffer = serialBuffer;
+    m_queue.enqueue(m_sendBuffer);
 
-        cmdTel = bufferToParse.at(2);
+    while (!m_queue.isEmpty()) {
+        m_bufferToParse = m_queue.dequeue();
 
-        payload_length = bufferToParse.at(5);
+        m_cmdTel = m_bufferToParse.at(2);
+        m_payloadLength = m_bufferToParse.at(5);
+
         for (int i = 6; i < 84; i++) {
-            bufferToPacket.append(bufferToParse.at(i));
+            m_bufferToPacket.append(m_bufferToParse.at(i));
         }
-        sendPacketToAPI(bufferToPacket);
+        sendPacketToAPI(m_bufferToPacket);
     }
 }
 
@@ -161,76 +163,82 @@ void Parser::sendPacketToAPI(QByteArray &bufferToPacket){
     m_aux_data31 = bufferToPacket.at(76);
     m_aux_data32 = bufferToPacket.at(77);
 
+    auto env = QProcessEnvironment::systemEnvironment();
+    QUrl url(env.value("SLIMER_BACKEND_URL"));
+    auto userInfo = QString("%1:%2")
+            .arg(env.value("SLIMER_BACKEND_USERNAME"))
+            .arg(env.value("SLIMER_BACKEND_PASSWORD"));
+    url.setUserInfo(userInfo);
+
     QNetworkRequest request;
-    QUrl url("https://tech-team-unipgracingteam.herokuapp.com/data/");
-    url.setUserInfo("");
     request.setUrl(url);
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     QString json = QString("{"
-                           "\"rpm\":\"%1\",\"inj1\":\"%2\","
-                           "\"inj2\":\"%3\",\"ign1\":\"%4\","
-                           "\"ign2\":\"%5\",\"wtemp\":\"%6\","
-                           "\"airtemp\":\"%7\",\"airp\":\"%8\","
-                           "\"oilt\":\"%9\",\"tps\":\"%10\","
-                           "\"lambda_1\":\"%11\",\"lambda_trg\":\"%12\","
-                           "\"speed_fl\":\"%13\",\"speed_fr\":\"%14\","
-                           "\"speed_rl\":\"%15\",\"speed_rr\":\"%16\","
-                           "\"vbatt\":\"%17\",\"aux\":\"%18\","
-                           "\"det\":\"%19\",\"fcmp\":\"%20\","
-                           "\"ecu_error\":\"%21\",\"fpga_error\":\"%22\","
-                           "\"status\":\"%23\",\"delta\":\"%24\","
-                           "\"dwell\":\"%25\",\"map_tc_sel\":\"%26\","
-                           "\"slpf_fl\":\"%27\",\"slpf_fr\":\"%28\","
-                           "\"slpf_rl\":\"%29\",\"slpf_rr\":\"%30\","
-                           "\"cutoff\":\"%31\",\"time\":\"%32\","
-                           "\"aux_data1\":\"%33\",\"aux_data2\":\"%34\","
-                           "\"aux_data3\":\"%35\",\"aux_data4\":\"%36\","
-                           "\"aux_data5\":\"%37\",\"aux_data6\":\"%38\","
-                           "\"aux_data7\":\"%39\",\"aux_data8\":\"%40\","
-                           "\"aux_data9\":\"%41\",\"aux_data10\":\"%42\","
-                           "\"aux_data11\":\"%43\",\"aux_data12\":\"%44\","
-                           "\"aux_data13\":\"%45\",\"aux_data14\":\"%46\","
-                           "\"aux_data15\":\"%47\",\"aux_data16\":\"%48\","
-                           "\"aux_data17\":\"%49\",\"aux_data18\":\"%50\","
-                           "\"aux_data19\":\"%51\",\"aux_data20\":\"%52\","
-                           "\"aux_data21\":\"%53\",\"aux_data22\":\"%54\","
-                           "\"aux_data23\":\"%55\",\"aux_data24\":\"%56\","
-                           "\"aux_data25\":\"%57\",\"aux_data26\":\"%58\","
-                           "\"aux_data27\":\"%59\",\"aux_data28\":\"%60\","
-                           "\"aux_data29\":\"%61\",\"aux_data30\":\"%62\","
-                           "\"aux_data31\":\"%63\",\"aux_data32\":\"%64\"}").arg(m_rpm).arg(m_inj1)
-                                                                             .arg(m_inj2).arg(m_ign1)
-                                                                             .arg(m_ign2).arg(m_wtemp)
-                                                                             .arg(m_airtemp).arg(m_airp)
-                                                                             .arg(m_oilt).arg(m_tps)
-                                                                             .arg(m_lambda_1).arg(m_lambda_trg)
-                                                                             .arg(m_speed_fl).arg(m_speed_fr)
-                                                                             .arg(m_speed_rl).arg(m_speed_rr)
-                                                                             .arg(m_vbatt).arg(m_aux)
-                                                                             .arg(m_det).arg(m_fcmp)
-                                                                             .arg(m_ecu_error).arg(m_fpga_error)
-                                                                             .arg(m_status).arg(m_delta)
-                                                                             .arg(m_dwell).arg(m_map_tc_sel)
-                                                                             .arg(m_slpf_fl).arg(m_slpf_fr)
-                                                                             .arg(m_slpf_rl).arg(m_slpf_rr)
-                                                                             .arg(m_cutoff).arg(m_time)
-                                                                             .arg(m_aux_data1).arg(m_aux_data2)
-                                                                             .arg(m_aux_data3).arg(m_aux_data4)
-                                                                             .arg(m_aux_data5).arg(m_aux_data6)
-                                                                             .arg(m_aux_data7).arg(m_aux_data8)
-                                                                             .arg(m_aux_data9).arg(m_aux_data10)
-                                                                             .arg(m_aux_data11).arg(m_aux_data12)
-                                                                             .arg(m_aux_data13).arg(m_aux_data14)
-                                                                             .arg(m_aux_data15).arg(m_aux_data16)
-                                                                             .arg(m_aux_data17).arg(m_aux_data18)
-                                                                             .arg(m_aux_data19).arg(m_aux_data20)
-                                                                             .arg(m_aux_data21).arg(m_aux_data22)
-                                                                             .arg(m_aux_data23).arg(m_aux_data24)
-                                                                             .arg(m_aux_data25).arg(m_aux_data26)
-                                                                             .arg(m_aux_data27).arg(m_aux_data28)
-                                                                             .arg(m_aux_data29).arg(m_aux_data30)
-                                                                             .arg(m_aux_data31).arg(m_aux_data32);
-    qDebug() << "~json " << json;
+                           "'rpm':'%1','inj1':'%2',"
+                           "'inj2':'%3','ign1':'%4',"
+                           "'ign2':'%5','wtemp':'%6',"
+                           "'airtemp':'%7','airp':'%8',"
+                           "'oilt':'%9','tps':'%10',"
+                           "'lambda_1':'%11','lambda_trg':'%12',"
+                           "'speed_fl':'%13','speed_fr':'%14',"
+                           "'speed_rl':'%15','speed_rr':'%16',"
+                           "'vbatt':'%17','aux':'%18',"
+                           "'det':'%19','fcmp':'%20',"
+                           "'ecu_error':'%21','fpga_error':'%22',"
+                           "'status':'%23','delta':'%24',"
+                           "'dwell':'%25','map_tc_sel':'%26',"
+                           "'slpf_fl':'%27','slpf_fr':'%28',"
+                           "'slpf_rl':'%29','slpf_rr':'%30',"
+                           "'cutoff':'%31','time':'%32',"
+                           "'aux_data1':'%33','aux_data2':'%34',"
+                           "'aux_data3':'%35','aux_data4':'%36',"
+                           "'aux_data5':'%37','aux_data6':'%38',"
+                           "'aux_data7':'%39','aux_data8':'%40',"
+                           "'aux_data9':'%41','aux_data10':'%42',"
+                           "'aux_data11':'%43','aux_data12':'%44',"
+                           "'aux_data13':'%45','aux_data14':'%46',"
+                           "'aux_data15':'%47','aux_data16':'%48',"
+                           "'aux_data17':'%49','aux_data18':'%50',"
+                           "'aux_data19':'%51','aux_data20':'%52',"
+                           "'aux_data21':'%53','aux_data22':'%54',"
+                           "'aux_data23':'%55','aux_data24':'%56',"
+                           "'aux_data25':'%57','aux_data26':'%58',"
+                           "'aux_data27':'%59','aux_data28':'%60',"
+                           "'aux_data29':'%61','aux_data30':'%62',"
+                           "'aux_data31':'%63','aux_data32':'%64'}")
+            .arg(m_rpm).arg(m_inj1)
+            .arg(m_inj2).arg(m_ign1)
+            .arg(m_ign2).arg(m_wtemp)
+            .arg(m_airtemp).arg(m_airp)
+            .arg(m_oilt).arg(m_tps)
+            .arg(m_lambda_1).arg(m_lambda_trg)
+            .arg(m_speed_fl).arg(m_speed_fr)
+            .arg(m_speed_rl).arg(m_speed_rr)
+            .arg(m_vbatt).arg(m_aux)
+            .arg(m_det).arg(m_fcmp)
+            .arg(m_ecu_error).arg(m_fpga_error)
+            .arg(m_status).arg(m_delta)
+            .arg(m_dwell).arg(m_map_tc_sel)
+            .arg(m_slpf_fl).arg(m_slpf_fr)
+            .arg(m_slpf_rl).arg(m_slpf_rr)
+            .arg(m_cutoff).arg(m_time)
+            .arg(m_aux_data1).arg(m_aux_data2)
+            .arg(m_aux_data3).arg(m_aux_data4)
+            .arg(m_aux_data5).arg(m_aux_data6)
+            .arg(m_aux_data7).arg(m_aux_data8)
+            .arg(m_aux_data9).arg(m_aux_data10)
+            .arg(m_aux_data11).arg(m_aux_data12)
+            .arg(m_aux_data13).arg(m_aux_data14)
+            .arg(m_aux_data15).arg(m_aux_data16)
+            .arg(m_aux_data17).arg(m_aux_data18)
+            .arg(m_aux_data19).arg(m_aux_data20)
+            .arg(m_aux_data21).arg(m_aux_data22)
+            .arg(m_aux_data23).arg(m_aux_data24)
+            .arg(m_aux_data25).arg(m_aux_data26)
+            .arg(m_aux_data27).arg(m_aux_data28)
+            .arg(m_aux_data29).arg(m_aux_data30)
+            .arg(m_aux_data31).arg(m_aux_data32);
+    qDebug() << "Json " << json;
     QNetworkReply *reply = m_manager->post(request, json.toUtf8());
     m_eventLoop.exec();
 

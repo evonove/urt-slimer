@@ -16,14 +16,14 @@ class Parser : public QObject
 
 public:
     Parser();
-    quint8 cmdTel;
-    QByteArray sendBuffer;
-    QByteArray bufferToParse;
-    QByteArray bufferToPacket;
-    quint16 payload_length = 0x00;
-    QQueue<QByteArray> queue;
+    quint8 m_cmdTel;
+    QByteArray m_sendBuffer;
+    QByteArray m_bufferToParse;
+    QByteArray m_bufferToPacket;
+    quint16 m_payloadLength;
+    QQueue<QByteArray> m_queue;
     void setPackage(QByteArray &serialBuffer);
-    void sendPacketToAPI(QByteArray &bufferToPacket);
+    void sendPacketToAPI(QByteArray &m_bufferToPacket);
 
 private:
     QNetworkAccessManager *m_manager;

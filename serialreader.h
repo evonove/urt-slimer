@@ -15,10 +15,10 @@ class SerialReader : public QObject
 
 public:
     SerialReader();
-    QByteArray serialBuffer;
-    QByteArray sendBuffer;
-    quint8 payload_index = 0x00;
-    quint8 payload_length = 0x00;
+    QByteArray m_serialBuffer;
+    QByteArray m_sendBuffer;
+    quint8 m_payloadIndex;
+    quint8 m_payloadLength;
     void processData(QByteArray datas, PackageState &state);
 
 public slots:
@@ -28,8 +28,7 @@ signals:
     void finished();
 
 private:
-    Parser parser;
-
+    Parser m_parser;
 };
 
 #endif // SERIALREADER_H
