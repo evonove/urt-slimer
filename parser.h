@@ -16,6 +16,7 @@ class Parser : public QObject
 
 public:
     Parser();
+    ~Parser();
     quint8 m_cmdTel;
     QByteArray m_sendBuffer;
     QByteArray m_bufferToParse;

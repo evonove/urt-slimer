@@ -8,23 +8,29 @@
 SerialReader::SerialReader()
     : m_payloadIndex{0x00}
     , m_payloadLength{0x00}
-{ }
+    , m_serialPort{ new QSerialPort }
+{
+    m_serialPort->setPortName("ttyUSB0");
+    m_serialPort->setParity(QSerialPort::NoParity);
+    m_serialPort->setBaudRate(QSerialPort::Baud9600, QSerialPort::Input);
+    m_serialPort->setStopBits(QSerialPort::OneStop);
+    m_serialPort->setFlowControl(QSerialPort::NoFlowControl);
+}
+
+SerialReader::~SerialReader()
+{
+    m_serialPort->deleteLater();
+}
 
 void SerialReader::runSerialReader(){
     PackageState state = START_BYTE_1;
 
-    QSerialPort *serialPort = new QSerialPort();
-    serialPort->setPortName("ttyUSB0");
-    serialPort->setParity(QSerialPort::NoParity);
-    serialPort->setBaudRate(QSerialPort::Baud9600, QSerialPort::Input);
-    serialPort->setStopBits(QSerialPort::OneStop);
-    serialPort->setFlowControl(QSerialPort::NoFlowControl);
-    serialPort->open(QIODevice::ReadOnly);
+    m_serialPort->open(QIODevice::ReadOnly);
 
-    if (serialPort->isOpen()) {
+    if (m_serialPort->isOpen()) {
         qDebug() << "Serial port is open...";
-        while (serialPort->waitForReadyRead(50)) {
-            QByteArray datas = serialPort->readAll();
+        while (m_serialPort->waitForReadyRead(50)) {
+            QByteArray datas = m_serialPort->readAll();
             if (datas.size() == 0) {
                 qDebug() << "ERROR data not read";
                 break;
@@ -33,10 +39,10 @@ void SerialReader::runSerialReader(){
             QCoreApplication::processEvents();
         }
     } else {
-        qDebug() << "OPEN ERROR: " << serialPort->errorString();
+        qDebug() << "OPEN ERROR: " << m_serialPort->errorString();
     }
 
-    serialPort->close();
+    m_serialPort->close();
     qDebug() << "...serial port is closed!";
     emit finished();
 }

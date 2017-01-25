@@ -4,6 +4,7 @@
 #include <QByteArray>
 #include <QString>
 #include <QObject>
+#include <QSerialPort>
 
 #include "payload_state.h"
 #include "parser.h"
@@ -15,6 +16,7 @@ class SerialReader : public QObject
 
 public:
     SerialReader();
+    ~SerialReader();
     QByteArray m_serialBuffer;
     QByteArray m_sendBuffer;
     quint8 m_payloadIndex;
@@ -28,6 +30,7 @@ signals:
     void finished();
 
 private:
+    QSerialPort *m_serialPort;
     Parser m_parser;
 };
 
